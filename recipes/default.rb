@@ -22,26 +22,22 @@
 # limitations under the License.
 
 # Gather a list of all nodes, warning if using Chef Solo
-if Chef::Config[:solo]
-  Chef::Log.warn 'ssh_known_hosts requires Chef search - Chef Solo does not support search!'
+if node['ssh_known_hosts']['include_self']
+  if Chef::Config[:solo]
+    Chef::Log.warn 'ssh_known_hosts requires Chef search - Chef Solo does not support search!'
 
-  # On Chef Solo, we still want the current node to be in the ssh_known_hosts
-  hosts = [node]
-else
-  hosts = partial_search(:node, "keys_ssh:* NOT name:#{node.name}",
-                         :keys => {
-                           'hostname' => [ 'hostname' ],
-                           'fqdn'     => [ 'fqdn' ],
-                           'ipaddress' => [ 'ipaddress' ],
-                           'host_rsa_public' => [ 'keys', 'ssh', 'host_rsa_public' ],
-                           'host_dsa_public' => [ 'keys', 'ssh', 'host_dsa_public' ]
-                         }
-                        ).collect do |host|
-                          {
-                            'fqdn' => host['fqdn'] || host['ipaddress'] || host['hostname'],
-                            'key' => host['host_rsa_public'] || host['host_dsa_public']
-                          }
+    # On Chef Solo, we still want the current node to be in the ssh_known_hosts
+    hosts = [node]
+  else
+    hosts = search(:node, 'keys_ssh:*').collect do |host|
+      {
+        'fqdn' => host['fqdn'] || host['ipaddress'] || host['hostname'],
+        'key'  => host['keys']['ssh']['host_rsa_public'] || host['keys']['ssh']['host_dsa_public']
+      }
+    end
   end
+else
+  hosts = []
 end
 
 # Add the data from the data_bag to the list of nodes.
