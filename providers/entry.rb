@@ -33,7 +33,6 @@ action :create do
     end
   end
 
-  print 'here!'
   # Use a Ruby block to edit the file
   ruby_block "add '#{new_resource.host}' to #{node['ssh_known_hosts']['file']}" do
     block do
